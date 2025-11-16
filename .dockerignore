@@ -1,0 +1,9 @@
+node_modules
+target
+.git
+.gitignore
+.env
+*.log
+dist
+keypair.json
+.anchor

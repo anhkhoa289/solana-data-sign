@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  emqx:
+    image: emqx/emqx:5.4.0
+    container_name: emqx
+    ports:
+      - "1883:1883"      # MQTT
+      - "8083:8083"      # MQTT over WebSocket
+      - "8084:8084"      # MQTT over WSS
+      - "8883:8883"      # MQTT over SSL
+      - "18083:18083"    # Dashboard
+    environment:
+      - EMQX_NAME=emqx
+      - EMQX_HOST=node1.emqx.local
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=admin
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=public
+    volumes:
+      - emqx-data:/opt/emqx/data
+      - emqx-log:/opt/emqx/log
+    networks:
+      - solana-network
+    healthcheck:
+      test: ["CMD", "emqx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  solana-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: solana-consumer
+    depends_on:
+      emqx:
+        condition: service_healthy
+    environment:
+      - EMQX_BROKER=mqtt://emqx:1883
+      - EMQX_TOPIC=data/sensor/#
+      - EMQX_USERNAME=
+      - EMQX_PASSWORD=
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - PROGRAM_ID=Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS
+      - KEYPAIR_PATH=/app/keypair.json
+    volumes:
+      - ./keypair.json:/app/keypair.json
+      - ./target:/app/target
+    networks:
+      - solana-network
+    restart: unless-stopped
+
+  # Optional: MQTT client for testing
+  mqtt-publisher:
+    image: efrecon/mqtt-client
+    container_name: mqtt-publisher
+    depends_on:
+      emqx:
+        condition: service_healthy
+    networks:
+      - solana-network
+    command: >
+      sh -c "
+        echo 'Waiting for EMQX to be ready...' &&
+        sleep 5 &&
+        echo 'Publishing test messages...' &&
+        while true; do
+          mosquitto_pub -h emqx -t 'data/sensor/temperature' -m '{\"data\":\"Temperature: 25.5C\",\"timestamp\":$(date +%s)000,\"source\":\"sensor-01\"}' &&
+          echo 'Published temperature data' &&
+          sleep 10;
+        done
+      "
+
+networks:
+  solana-network:
+    driver: bridge
+
+volumes:
+  emqx-data:
+  emqx-log:
