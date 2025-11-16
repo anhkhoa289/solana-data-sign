@@ -1,0 +1,30 @@
+{
+  "name": "solana-data-sign-consumer",
+  "version": "1.0.0",
+  "description": "EMQX consumer for Solana data signing",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "solana",
+    "emqx",
+    "mqtt"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.87.6",
+    "mqtt": "^5.3.4",
+    "dotenv": "^16.3.1",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0"
+  }
+}
